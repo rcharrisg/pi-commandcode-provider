@@ -1,5 +1,5 @@
 {
-  "name": "pi-commandcode-provider",
+  "name": "@rcharrisg/pi-commandcode-provider",
   "version": "0.6.4",
   "description": "pi custom provider for Command Code API (commandcode.ai)",
   "type": "module",
@@ -12,11 +12,11 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/patlux/pi-commandcode-provider.git"
+    "url": "git+https://github.com/rcharrisg/pi-commandcode-provider.git"
   },
-  "homepage": "https://github.com/patlux/pi-commandcode-provider#readme",
+  "homepage": "https://github.com/rcharrisg/pi-commandcode-provider#readme",
   "bugs": {
-    "url": "https://github.com/patlux/pi-commandcode-provider/issues"
+    "url": "https://github.com/rcharrisg/pi-commandcode-provider/issues"
   },
   "files": [
     "index.ts",
@@ -37,6 +37,7 @@
     "pi:authenticated": "node scripts/pi-authenticated.mjs",
     "check:commandcode-catalog": "tsx .github/scripts/check-commandcode-model-metadata.ts command-code@latest",
     "sync:commandcode-catalog": "tsx .github/scripts/check-commandcode-model-metadata.ts command-code@latest --write",
+    "prune:catalog-overrides": "tsx scripts/prune-catalog-overrides.ts",
     "test:quota": "tsx tests/test-quota.ts && tsx tests/test-quota-command.ts",
     "test:unit": "tsx tests/test-api-key.ts && tsx tests/test-pure-functions.ts && tsx tests/test-models.ts && tsx tests/test-model-metadata-check.ts && tsx tests/test-runtime.ts && tsx tests/test-pricing.ts && tsx tests/test-cost.ts && tsx tests/test-oauth.ts && tsx tests/test-abort.ts && tsx tests/test-overflow.ts && tsx tests/test-stream.ts && tsx tests/test-quota.ts && tsx tests/test-quota-command.ts && tsx tests/test-retry.ts && tsx tests/test-transport.ts",
     "test:api-key": "tsx tests/test-api-key.ts",
