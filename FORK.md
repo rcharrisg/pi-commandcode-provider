@@ -42,3 +42,7 @@ that keeps the catalog current without manual releases.
 - If the sync script itself breaks (Command Code changed its bundle layout),
   merge `upstream/main` into this fork — the fix usually lands there first.
 - Pricing stays manual (upstream treats it as review-only).
+
+## Install tracking
+
+Installed in pi as `git:github.com/rcharrisg/pi-commandcode-provider@main`; each sync run the workflow advances `main`.
