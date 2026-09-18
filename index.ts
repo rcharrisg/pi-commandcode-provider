@@ -5,9 +5,10 @@
  * https://api.commandcode.ai/provider/v1
  */
 
-import { AssistantMessageEventStream } from "@earendil-works/pi-ai"
-import * as piAiCompat from "@earendil-works/pi-ai/compat"
-import { streamSimple as streamNativeProvider } from "@earendil-works/pi-ai/compat"
+import {
+  AssistantMessageEventStream,
+  streamSimple as streamNativeProvider,
+} from "@earendil-works/pi-ai"
 import {
   getAgentDir,
   type ExtensionAPI,
@@ -50,13 +51,26 @@ type CompatStreamFunction = (
 ) => AssistantMessageEventStream
 
 /**
- * pi's compat entrypoint exposes `registerApiProvider`; Oh My Pi maps
+ * pi's compat entrypoint exposes `registerApiProvider`. Oh My Pi maps
  * `@earendil-works/pi-ai/compat` onto its own pi-ai, which lacks that export
- * and registers custom APIs itself inside `registerProvider`. Resolve the
- * function at runtime so the extension loads on both hosts.
+ * and registers custom APIs itself inside `registerProvider`. Prime Agent
+ * 0.9.3 does not ship the compat subpath at all, so the module is loaded
+ * dynamically and treated as absent when the host cannot resolve it.
  */
+type CompatModule = { registerApiProvider?: (...args: unknown[]) => unknown }
+
+let compatModule: CompatModule | undefined
+
+async function loadCompatModule(): Promise<CompatModule | undefined> {
+  try {
+    return (await import("@earendil-works/pi-ai/compat")) as CompatModule
+  } catch {
+    return undefined
+  }
+}
+
 function compatApiProviderRegistrar(): ((...args: unknown[]) => unknown) | undefined {
-  const register = (piAiCompat as { registerApiProvider?: unknown }).registerApiProvider
+  const register = compatModule?.registerApiProvider
   return typeof register === "function" ? (register as (...args: unknown[]) => unknown) : undefined
 }
 
@@ -153,6 +167,7 @@ function legacyApiBase(providerApiBase: string): string {
 }
 
 export default async function (pi: ExtensionAPI) {
+  compatModule = await loadCompatModule()
   const apiBase = process.env.COMMANDCODE_API_BASE ?? DEFAULT_PROVIDER_API_BASE
   const modelsUrl = process.env.COMMANDCODE_MODELS_URL ?? DEFAULT_MODELS_URL
   const modelsTimeoutMs = getModelsTimeoutMs()
