@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Generate display pricing from the official `command-code` reference table (`src/commandcode-pricing-catalog.ts`) and merge it with `MANUAL_MODEL_COSTS`, which now holds only context-dependent tiers and documented overrides. New models arrive priced instead of billing as a silent `$0`.
+- Fail `test:pricing` when a model the live API advertises has no price, when a price comes from neither the generated catalog nor `MANUAL_MODEL_COSTS`, or when the live model snapshot is older than 14 days (the signature of a stopped sync workflow).
+- Refresh the live model-id snapshot and the pricing fixture inside the daily catalog sync.
+
 ## 0.7.1 - 2026-09-18
 
 - Normalize nullable type arrays for `google/gemini-*` tools on the generate transport to avoid the gateway's `any_of` validation error, preserving required fields, literal data, and schemas for unrelated models (#99, #103).

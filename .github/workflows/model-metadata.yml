@@ -55,13 +55,17 @@ jobs:
           cache: npm
           registry-url: https://registry.npmjs.org
       - run: npm ci
+      - name: Refresh the live model list snapshot
+        run: npm run refresh:model-ids
       - name: Synchronize with the latest Command Code CLI
         run: npm run sync:commandcode-catalog | tee commandcode-catalog-report.md
       - name: Prune overrides now shipped by the catalog
         run: npm run prune:catalog-overrides
+      - name: Refresh the pricing fixture
+        run: npm run sync:pricing-fixture
       - name: Format and verify synchronized files
         run: |
-          npm run format -- src/commandcode-catalog.ts src/commandcode-catalog-overrides.ts README.md
+          npm run format -- src/commandcode-catalog.ts src/commandcode-catalog-overrides.ts src/commandcode-pricing-catalog.ts README.md
           npm run typecheck
           npm run test:models
           npm run format:check
@@ -74,7 +78,13 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add src/commandcode-catalog.ts src/commandcode-catalog-overrides.ts README.md
+          git add \
+            src/commandcode-catalog.ts \
+            src/commandcode-catalog-overrides.ts \
+            src/commandcode-pricing-catalog.ts \
+            tests/fixtures/commandcode-model-ids.json \
+            tests/fixtures/commandcode-pricing.json \
+            README.md
           if git diff --cached --quiet; then
             echo "Catalog is already current; nothing to commit."
             echo "changed=false" >> "$GITHUB_OUTPUT"

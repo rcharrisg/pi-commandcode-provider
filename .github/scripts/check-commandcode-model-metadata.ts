@@ -4,6 +4,7 @@ import { tmpdir } from "node:os"
 import { join, resolve } from "node:path"
 import { pathToFileURL } from "node:url"
 import { promisify } from "node:util"
+import { format, resolveConfig } from "prettier"
 import ts from "typescript"
 
 import {
@@ -13,6 +14,7 @@ import {
   MODEL_MAX_OUTPUT_TOKENS,
   MODEL_REASONING,
 } from "../../src/commandcode-catalog.ts"
+import { CATALOG_MODEL_COSTS } from "../../src/commandcode-pricing-catalog.ts"
 
 const execFileAsync = promisify(execFile)
 const MODELS_REFERENCE_PATH = "dist/bundled/command-code-knowledge/reference/models.md"
@@ -40,14 +42,26 @@ function execNpmFileAsync(
   return execFileAsync(command, { ...options, shell: true })
 }
 const CATALOG_SOURCE_PATH = new URL("../../src/commandcode-catalog.ts", import.meta.url)
+const PRICING_CATALOG_SOURCE_PATH = new URL(
+  "../../src/commandcode-pricing-catalog.ts",
+  import.meta.url,
+)
 const README_PATH = new URL("../../README.md", import.meta.url)
 const OVERRIDES_SOURCE_PATH = new URL("../../src/commandcode-catalog-overrides.ts", import.meta.url)
+
+export interface CommandCodeModelCostSnapshot {
+  input: number
+  output: number
+  cacheRead: number
+  cacheWrite: number
+}
 
 export interface CommandCodeModelMetadata {
   imageModelIds: readonly string[]
   reasoningModelIds: readonly string[]
   reasoningEfforts: Readonly<Record<string, readonly string[]>>
   maxOutputTokens: Readonly<Record<string, number>>
+  modelCosts: Readonly<Record<string, CommandCodeModelCostSnapshot>>
 }
 
 export interface ModelMetadataDiff {
@@ -62,6 +76,9 @@ export interface ModelMetadataDiff {
   addedMaxOutputModelIds: readonly string[]
   removedMaxOutputModelIds: readonly string[]
   changedMaxOutputModelIds: readonly string[]
+  addedPriceModelIds: readonly string[]
+  removedPriceModelIds: readonly string[]
+  changedPriceModelIds: readonly string[]
 }
 
 interface PackedPackage {
@@ -103,19 +120,27 @@ export function parsePackageVersion(value: unknown): string {
 export function parseModelsReference(markdown: string): {
   modelIds: readonly string[]
   reasoningEfforts: Readonly<Record<string, readonly string[]>>
+  modelCosts: Readonly<Record<string, CommandCodeModelCostSnapshot>>
 } {
   const modelIds = new Set<string>()
   const reasoningEfforts: Record<string, readonly string[]> = {}
+  const modelCosts: Record<string, CommandCodeModelCostSnapshot> = {}
 
   for (const line of markdown.split("\n")) {
-    const match = /^\| `([^`]+)` \| [^|]* \| [^|]* \| ([^|]*) \|/.exec(line)
+    const match = /^\| `([^`]+)` \| [^|]* \| [^|]* \| ([^|]*) \| ([^|]*) \|/.exec(line)
     if (!match) continue
 
     const modelId = match[1]
     const effortsColumn = match[2]?.trim()
+    const priceColumn = match[3]?.trim()
     if (!modelId || !effortsColumn) throw new Error(`Could not parse model row: ${line}`)
     if (modelIds.has(modelId)) throw new Error(`Duplicate model id in reference: ${modelId}`)
     modelIds.add(modelId)
+
+    if (priceColumn === undefined || priceColumn.length === 0) {
+      throw new Error(`Missing price cell for ${modelId}: ${line}`)
+    }
+    modelCosts[modelId] = parseModelCost(modelId, priceColumn)
 
     if (effortsColumn === "—") continue
 
@@ -133,6 +158,29 @@ export function parseModelsReference(markdown: string): {
     reasoningEfforts: Object.fromEntries(
       Object.entries(reasoningEfforts).sort(([left], [right]) => left.localeCompare(right)),
     ),
+    modelCosts: Object.fromEntries(
+      Object.entries(modelCosts).sort(([left], [right]) => left.localeCompare(right)),
+    ),
+  }
+}
+
+/**
+ * Parse one official price cell, e.g. `$1.2/$3.6 · cache $0.3` or
+ * `$5/$25 · cache $0.5 (write $6.25)`. The reference table is the source of
+ * truth for display pricing, so an unparseable cell fails the sync instead of
+ * silently billing $0.
+ */
+export function parseModelCost(modelId: string, cell: string): CommandCodeModelCostSnapshot {
+  const parsed =
+    /^\$([\d.]+)\/\$([\d.]+)(?:\s*·\s*cache \$([\d.]+))?(?:\s*\(write \$([\d.]+)\))?$/.exec(cell)
+  if (!parsed) throw new Error(`Could not parse price for ${modelId}: ${cell}`)
+
+  const [, input, output, cacheRead, cacheWrite] = parsed
+  return {
+    input: Number(input),
+    output: Number(output),
+    cacheRead: Number(cacheRead ?? 0),
+    cacheWrite: Number(cacheWrite ?? 0),
   }
 }
 
@@ -226,6 +274,7 @@ export function commandCodeModelMetadataFromContents(
     reasoningModelIds: capabilities.reasoningModelIds,
     reasoningEfforts: reference.reasoningEfforts,
     maxOutputTokens: capabilities.maxOutputTokens,
+    modelCosts: reference.modelCosts,
   }
 }
 
@@ -241,6 +290,7 @@ export function currentModelMetadata(): CommandCodeModelMetadata {
     maxOutputTokens: Object.fromEntries(
       Object.entries(MODEL_MAX_OUTPUT_TOKENS).sort(([left], [right]) => left.localeCompare(right)),
     ),
+    modelCosts: CATALOG_MODEL_COSTS,
   }
 }
 
@@ -262,6 +312,10 @@ export function diffModelMetadata(
   const upstreamMaxOutputIds = Object.keys(upstream.maxOutputTokens)
   const currentMaxOutputSet = new Set(currentMaxOutputIds)
   const upstreamMaxOutputSet = new Set(upstreamMaxOutputIds)
+  const currentPriceIds = Object.keys(current.modelCosts)
+  const upstreamPriceIds = Object.keys(upstream.modelCosts)
+  const currentPriceSet = new Set(currentPriceIds)
+  const upstreamPriceSet = new Set(upstreamPriceIds)
 
   return {
     versionChanged: currentVersion !== upstreamVersion,
@@ -304,6 +358,18 @@ export function diffModelMetadata(
           current.maxOutputTokens[modelId] !== upstream.maxOutputTokens[modelId],
       ),
     ),
+    addedPriceModelIds: sorted(upstreamPriceIds.filter((modelId) => !currentPriceSet.has(modelId))),
+    removedPriceModelIds: sorted(
+      currentPriceIds.filter((modelId) => !upstreamPriceSet.has(modelId)),
+    ),
+    changedPriceModelIds: sorted(
+      upstreamPriceIds.filter(
+        (modelId) =>
+          currentPriceSet.has(modelId) &&
+          JSON.stringify(current.modelCosts[modelId]) !==
+            JSON.stringify(upstream.modelCosts[modelId]),
+      ),
+    ),
   }
 }
 
@@ -330,6 +396,22 @@ function formatReasoningChanges(
         `\`${modelId}\`: \`${(current.reasoningEfforts[modelId] ?? []).join(", ")}\` → \`${(
           upstream.reasoningEfforts[modelId] ?? []
         ).join(", ")}\``,
+    )
+    .join("<br>")
+}
+
+function formatPriceChanges(
+  modelIds: readonly string[],
+  current: CommandCodeModelMetadata,
+  upstream: CommandCodeModelMetadata,
+): string {
+  if (modelIds.length === 0) return "None"
+  const describe = (cost: CommandCodeModelCostSnapshot | undefined): string =>
+    cost ? `$${cost.input}/$${cost.output} · cache $${cost.cacheRead}` : "missing"
+  return modelIds
+    .map(
+      (modelId) =>
+        `\`${modelId}\`: \`${describe(current.modelCosts[modelId])}\` → \`${describe(upstream.modelCosts[modelId])}\``,
     )
     .join("<br>")
 }
@@ -369,6 +451,81 @@ export function renderCommandCodeCatalog(
     .join("\n")
 
   return `export const COMMAND_CODE_CLI_VERSION = ${quoted(packageVersion)}\n\nexport type CommandCodeInputType = "text" | "image"\nexport type CommandCodeReasoningEffort = "minimal" | "low" | "medium" | "high" | "xhigh" | "max"\n\n/**\n * Generated from command-code@${packageVersion} by \`npm run sync:commandcode-catalog\`.\n * Do not edit manually.\n */\nexport const MODEL_INPUT_MODALITIES: Readonly<Record<string, readonly CommandCodeInputType[]>> = {\n${imageEntries}\n}\n\nexport const MODEL_REASONING: Readonly<Record<string, true>> = {\n${reasoningEntries}\n}\n\nexport const MODEL_EFFORTS: Readonly<Record<string, readonly CommandCodeReasoningEffort[]>> = {\n${effortEntries}\n}\n\nexport const MODEL_MAX_OUTPUT_TOKENS: Readonly<Record<string, number>> = {\n${maxOutputEntries}\n}\n`
+}
+
+function priceNumber(value: number): string {
+  return String(value)
+}
+
+/**
+ * Render the generated pricing catalog. The sync writes today's date, but only
+ * rewrites the file when the rates themselves changed, so a no-op sync does not
+ * churn a daily commit.
+ */
+export function renderCommandCodePricingCatalog(
+  packageVersion: string,
+  metadata: CommandCodeModelMetadata,
+  syncedAt: string,
+): string {
+  const entries = Object.entries(metadata.modelCosts)
+    .sort(([left], [right]) => left.localeCompare(right))
+    .map(
+      ([modelId, cost]) =>
+        `  ${quoted(modelId)}: { input: ${priceNumber(cost.input)}, output: ${priceNumber(cost.output)}, cacheRead: ${priceNumber(cost.cacheRead)}, cacheWrite: ${priceNumber(cost.cacheWrite)} },`,
+    )
+    .join("\n")
+
+  return `export const CATALOG_PRICING_VERSION = ${quoted(packageVersion)}
+export const CATALOG_PRICING_SYNCED_AT = ${quoted(syncedAt)}
+
+/**
+ * Generated from command-code@${packageVersion} by \`npm run sync:commandcode-catalog\`.
+ * Display prices in USD per million tokens, parsed from the official
+ * \`command-code\` reference table (dist/bundled/command-code-knowledge/reference/models.md).
+ * Do not edit manually.
+ */
+export const CATALOG_MODEL_COSTS: Readonly<
+  Record<string, { input: number; output: number; cacheRead: number; cacheWrite: number }>
+> = {
+${entries}
+}
+`
+}
+
+function withoutSyncDate(contents: string): string {
+  return contents.replace(
+    /export const CATALOG_PRICING_SYNCED_AT = "[^"]*"/,
+    "export const CATALOG_PRICING_SYNCED_AT =",
+  )
+}
+
+async function formatCatalogSource(contents: string, filepath: string): Promise<string> {
+  const options = await resolveConfig(new URL("../../.prettierrc.json", import.meta.url))
+  return format(contents, { ...options, filepath })
+}
+
+/** Write the pricing catalog only when the rates changed. Returns true when written. */
+async function writePricingCatalog(
+  packageVersion: string,
+  metadata: CommandCodeModelMetadata,
+): Promise<boolean> {
+  const rendered = renderCommandCodePricingCatalog(
+    packageVersion,
+    metadata,
+    new Date().toISOString().slice(0, 10),
+  )
+  const formatted = await formatCatalogSource(rendered, "commandcode-pricing-catalog.ts")
+
+  let previous = ""
+  try {
+    previous = await readFile(PRICING_CATALOG_SOURCE_PATH, "utf-8")
+  } catch {
+    previous = ""
+  }
+  if (previous.length > 0 && withoutSyncDate(previous) === withoutSyncDate(formatted)) return false
+
+  await writeFile(PRICING_CATALOG_SOURCE_PATH, formatted, "utf-8")
+  return true
 }
 
 function updateDocumentedCatalogVersion(
@@ -447,19 +604,20 @@ export function updateReadmeCatalogVersion(readme: string, packageVersion: strin
 async function writeSynchronizedCatalog(
   packageVersion: string,
   metadata: CommandCodeModelMetadata,
-): Promise<readonly string[]> {
+): Promise<{ removedOverrides: readonly string[]; pricesWritten: boolean }> {
   const readme = await readFile(README_PATH, "utf-8")
   await Promise.all([
     writeFile(CATALOG_SOURCE_PATH, renderCommandCodeCatalog(packageVersion, metadata), "utf-8"),
     writeFile(README_PATH, updateReadmeCatalogVersion(readme, packageVersion), "utf-8"),
   ])
+  const pricesWritten = await writePricingCatalog(packageVersion, metadata)
 
   const overrides = await readFile(OVERRIDES_SOURCE_PATH, "utf-8")
   const pruned = pruneObsoleteEffortOverrides(overrides, Object.keys(metadata.reasoningEfforts))
   if (pruned.removedModelIds.length > 0) {
     await writeFile(OVERRIDES_SOURCE_PATH, pruned.contents, "utf-8")
   }
-  return pruned.removedModelIds
+  return { removedOverrides: pruned.removedModelIds, pricesWritten }
 }
 
 function metadataReport(
@@ -480,6 +638,7 @@ function metadataReport(
     `- Reasoning models: ${current.reasoningModelIds.length} repository / ${upstream.reasoningModelIds.length} upstream`,
     `- Models with selectable efforts: ${Object.keys(current.reasoningEfforts).length} repository / ${Object.keys(upstream.reasoningEfforts).length} upstream`,
     `- Model-specific output limits: ${Object.keys(current.maxOutputTokens).length} repository / ${Object.keys(upstream.maxOutputTokens).length} upstream`,
+    `- Display prices: ${Object.keys(current.modelCosts).length} repository / ${Object.keys(upstream.modelCosts).length} upstream`,
     "",
     "| Change | Models |",
     "| --- | --- |",
@@ -494,6 +653,9 @@ function metadataReport(
     `| New output limits | ${formatList(diff.addedMaxOutputModelIds)} |`,
     `| Removed output limits | ${formatList(diff.removedMaxOutputModelIds)} |`,
     `| Changed output limits | ${formatList(diff.changedMaxOutputModelIds)} |`,
+    `| New prices | ${formatList(diff.addedPriceModelIds)} |`,
+    `| Removed prices | ${formatList(diff.removedPriceModelIds)} |`,
+    `| Changed prices | ${formatPriceChanges(diff.changedPriceModelIds, current, upstream)} |`,
     "",
   ].join("\n")
 }
@@ -578,11 +740,16 @@ async function main(): Promise<void> {
   console.log(report)
 
   if (write) {
-    const removedOverrides = await writeSynchronizedCatalog(
+    const { removedOverrides, pricesWritten } = await writeSynchronizedCatalog(
       upstreamPackage.packageVersion,
       upstreamPackage.metadata,
     )
     console.log(`Synchronized static metadata with command-code@${upstreamPackage.packageVersion}.`)
+    console.log(
+      pricesWritten
+        ? `Refreshed ${Object.keys(upstreamPackage.metadata.modelCosts).length} display prices.`
+        : "Display prices are unchanged.",
+    )
     if (removedOverrides.length > 0) {
       console.log(
         `Removed ${removedOverrides.length} manual effort override(s) now published upstream: ${removedOverrides.join(", ")}.`,

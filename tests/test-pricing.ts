@@ -3,6 +3,12 @@ import { readFile } from "node:fs/promises"
 import { describe, it } from "node:test"
 
 import {
+  CATALOG_MODEL_COSTS,
+  CATALOG_PRICING_SYNCED_AT,
+  CATALOG_PRICING_VERSION,
+} from "../src/commandcode-pricing-catalog.ts"
+import {
+  MANUAL_MODEL_COSTS,
   MODEL_COSTS,
   PRICING_LAST_VERIFIED,
   PRICING_SOURCE_URL,
@@ -52,13 +58,29 @@ function assertCost(
 }
 
 describe("MODEL_COSTS pricing overlay", () => {
-  it("covers the current Command Code model catalog snapshot", () => {
+  it("prices every model the live Command Code API advertises", () => {
     assert.equal(fixture.source, "https://api.commandcode.ai/provider/v1/models")
-    assert.match(fixture.fetchedAt, /^2026-09-18T/)
+    assert.match(fixture.fetchedAt, /^\d{4}-\d{2}-\d{2}T/)
 
-    const catalogIds = [...fixture.modelIds].sort()
-    const pricedIds = Object.keys(MODEL_COSTS).sort()
-    assert.deepEqual(pricedIds, catalogIds)
+    // The daily catalog sync refreshes this snapshot. A stale snapshot means the
+    // workflow stopped running, which is also how a missing price went unnoticed.
+    const ageInDays = (Date.now() - Date.parse(fixture.fetchedAt)) / 86_400_000
+    assert.ok(
+      ageInDays <= 14,
+      `live model snapshot is ${Math.round(ageInDays)} days old; is the daily catalog sync workflow still enabled?`,
+    )
+
+    const missing = fixture.modelIds.filter((modelId) => MODEL_COSTS[modelId] === undefined)
+    assert.deepEqual(missing, [], "every advertised model needs a display price")
+  })
+
+  it("only prices models published by the official catalog or a documented override", () => {
+    const allowed = new Set([
+      ...Object.keys(CATALOG_MODEL_COSTS),
+      ...Object.keys(MANUAL_MODEL_COSTS),
+    ])
+    const unexpected = Object.keys(MODEL_COSTS).filter((modelId) => !allowed.has(modelId))
+    assert.deepEqual(unexpected, [], "prices must come from the official catalog or an override")
   })
 
   it("matches the verified official pricing snapshot", () => {
@@ -265,7 +287,11 @@ describe("MODEL_COSTS pricing overlay", () => {
 
   it("tracks pricing provenance", () => {
     assert.equal(PRICING_SOURCE_URL, "https://commandcode.ai/docs/resources/pricing-limits")
-    assert.equal(PRICING_LAST_VERIFIED, "2026-09-18")
+    assert.match(PRICING_LAST_VERIFIED, /^\d{4}-\d{2}-\d{2}$/)
+    // Prices are generated from the official package, so the verified date is
+    // the date of the catalog sync that produced them.
+    assert.equal(PRICING_LAST_VERIFIED, CATALOG_PRICING_SYNCED_AT)
+    assert.match(CATALOG_PRICING_VERSION, /^\d+\.\d+\.\d+$/)
   })
 
   it("fails once temporary pricing needs review", () => {

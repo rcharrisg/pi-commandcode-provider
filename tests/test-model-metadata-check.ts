@@ -8,9 +8,11 @@ import {
   parseBundleModelCapabilities,
   parseKnownTextOnlyModelIds,
   parseModelsReference,
+  parseModelCost,
   parsePackageVersion,
   pruneObsoleteEffortOverrides,
   renderCommandCodeCatalog,
+  renderCommandCodePricingCatalog,
   updateReadmeCatalogVersion,
   type CommandCodeModelMetadata,
 } from "../.github/scripts/check-commandcode-model-metadata.ts"
@@ -45,6 +47,10 @@ describe("Command Code model metadata checker", () => {
     assert.deepEqual(parseModelsReference(MODELS_REFERENCE), {
       modelIds: ["text-model", "vision-model"],
       reasoningEfforts: { "vision-model": ["low", "high"] },
+      modelCosts: {
+        "text-model": { input: 1, output: 2, cacheRead: 0, cacheWrite: 0 },
+        "vision-model": { input: 1, output: 2, cacheRead: 0, cacheWrite: 0 },
+      },
     })
   })
 
@@ -69,6 +75,10 @@ describe("Command Code model metadata checker", () => {
       reasoningModelIds: ["vision-model"],
       reasoningEfforts: { "vision-model": ["low", "high"] },
       maxOutputTokens: { "vision-model": 32_768 },
+      modelCosts: {
+        "text-model": { input: 1, output: 2, cacheRead: 0, cacheWrite: 0 },
+        "vision-model": { input: 1, output: 2, cacheRead: 0, cacheWrite: 0 },
+      },
     })
   })
 
@@ -82,6 +92,11 @@ describe("Command Code model metadata checker", () => {
         "stable-effort": ["low", "high"],
       },
       maxOutputTokens: { "changed-output": 1, "removed-output": 2, "stable-output": 3 },
+      modelCosts: {
+        "changed-price": { input: 1, output: 2, cacheRead: 0, cacheWrite: 0 },
+        "removed-price": { input: 3, output: 4, cacheRead: 0, cacheWrite: 0 },
+        "stable-price": { input: 5, output: 6, cacheRead: 0, cacheWrite: 0 },
+      },
     }
     const upstream: CommandCodeModelMetadata = {
       imageModelIds: ["added-image", "stable-image"],
@@ -92,6 +107,11 @@ describe("Command Code model metadata checker", () => {
         "stable-effort": ["low", "high"],
       },
       maxOutputTokens: { "added-output": 4, "changed-output": 5, "stable-output": 3 },
+      modelCosts: {
+        "added-price": { input: 7, output: 8, cacheRead: 0, cacheWrite: 0 },
+        "changed-price": { input: 9, output: 2, cacheRead: 0, cacheWrite: 0 },
+        "stable-price": { input: 5, output: 6, cacheRead: 0, cacheWrite: 0 },
+      },
     }
 
     const diff = diffModelMetadata(current, upstream)
@@ -108,6 +128,9 @@ describe("Command Code model metadata checker", () => {
       addedMaxOutputModelIds: ["added-output"],
       removedMaxOutputModelIds: ["removed-output"],
       changedMaxOutputModelIds: ["changed-output"],
+      addedPriceModelIds: ["added-price"],
+      removedPriceModelIds: ["removed-price"],
+      changedPriceModelIds: ["changed-price"],
     })
     assert.equal(hasModelMetadataDiff(diff), true)
   })
@@ -118,6 +141,7 @@ describe("Command Code model metadata checker", () => {
       reasoningModelIds: ["vision-model"],
       reasoningEfforts: { "vision-model": ["low"] },
       maxOutputTokens: { "vision-model": 32_768 },
+      modelCosts: { "vision-model": { input: 1, output: 2, cacheRead: 0, cacheWrite: 0 } },
     }
 
     const diff = diffModelMetadata(metadata, metadata, "1.32.2", "1.33.0")
@@ -136,6 +160,7 @@ describe("Command Code model metadata checker", () => {
           "a-model": ["low"],
         },
         maxOutputTokens: { "b-model": 32_768 },
+        modelCosts: { "b-model": { input: 1, output: 2, cacheRead: 0.5, cacheWrite: 0 } },
       }),
       `export const COMMAND_CODE_CLI_VERSION = "1.33.0"
 
@@ -303,6 +328,55 @@ export const MODEL_MAX_OUTPUT_TOKENS: Readonly<Record<string, number>> = {
   "short": ["low"],
 }
 `,
+    )
+  })
+  it("parses official price cells, including cache reads and cache writes", () => {
+    assert.deepEqual(parseModelCost("plain", "$1/$2"), {
+      input: 1,
+      output: 2,
+      cacheRead: 0,
+      cacheWrite: 0,
+    })
+    assert.deepEqual(parseModelCost("cached", "$0.14/$0.28 \u00b7 cache $0.0028"), {
+      input: 0.14,
+      output: 0.28,
+      cacheRead: 0.0028,
+      cacheWrite: 0,
+    })
+    assert.deepEqual(parseModelCost("writing", "$5/$25 \u00b7 cache $0.5 (write $6.25)"), {
+      input: 5,
+      output: 25,
+      cacheRead: 0.5,
+      cacheWrite: 6.25,
+    })
+    assert.throws(() => parseModelCost("broken", "Free"), /Could not parse price for broken/)
+  })
+
+  it("renders the generated pricing catalog from the official rates", () => {
+    const rendered = renderCommandCodePricingCatalog(
+      "1.33.0",
+      {
+        imageModelIds: ["b-model"],
+        reasoningModelIds: [],
+        reasoningEfforts: {},
+        maxOutputTokens: {},
+        modelCosts: {
+          "b-model": { input: 1, output: 2, cacheRead: 0.5, cacheWrite: 0 },
+          "a-model": { input: 0.15, output: 0.6, cacheRead: 0.003, cacheWrite: 0 },
+        },
+      },
+      "2026-09-21",
+    )
+
+    assert.match(rendered, /export const CATALOG_PRICING_VERSION = "1.33.0"/)
+    assert.match(rendered, /export const CATALOG_PRICING_SYNCED_AT = "2026-09-21"/)
+    assert.match(
+      rendered,
+      /"a-model": \{ input: 0\.15, output: 0\.6, cacheRead: 0\.003, cacheWrite: 0 \},/,
+    )
+    assert.ok(
+      rendered.indexOf('"a-model"') < rendered.indexOf('"b-model"'),
+      "entries must be sorted by model id",
     )
   })
 })

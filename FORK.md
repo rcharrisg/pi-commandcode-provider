@@ -56,13 +56,26 @@ repository activity.
 
 ## Two sync paths
 
-| Path                | Trigger                                     | What it does                                                                     |
-| ------------------- | ------------------------------------------- | -------------------------------------------------------------------------------- |
-| GitHub Actions      | daily cron `17 6 * * *` (+ manual dispatch) | sync → prune → typecheck/tests → commit + patch bump + tag on `main`             |
-| Local systemd timer | weekly, workstation                         | re-enables the workflow, dispatches it, then runs `pi update --extension …@main` |
+| Path                | Trigger                                     | What it does                                                                                                |
+| ------------------- | ------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| GitHub Actions      | daily cron `17 6 * * *` (+ manual dispatch) | refresh live snapshot → sync capabilities and prices → prune → fixtures → tests → commit + patch bump + tag |
+| Local systemd timer | weekly, workstation                         | re-enables the workflow, dispatches it, then runs `pi update --extension …@main`                            |
 
 Log of the local path: `~/.local/state/pi-commandcode/refresh.log`.
 Remove it with `systemctl --user disable --now pi-commandcode-refresh.timer`.
+
+## Display pricing
+
+`src/commandcode-pricing-catalog.ts` is generated from the official `command-code`
+reference table (`dist/bundled/command-code-knowledge/reference/models.md`), which
+carries `$in/$out · cache $x (write $y)` per model id. `src/pricing.ts` keeps
+`MANUAL_MODEL_COSTS` for context-dependent tiers and documented corrections, and
+merges them over the generated rates.
+
+`npm run test:pricing` fails when a model the live API advertises has no price
+(which used to bill as a silent `$0`), when the merged table invents a price
+outside those two sources, or when the live snapshot is more than 14 days old —
+the signature of a dead sync workflow.
 
 ## Known gaps
 

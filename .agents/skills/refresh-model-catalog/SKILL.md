@@ -10,7 +10,8 @@ Use this skill whenever the Command Code model catalog changes: new or retired m
 ## Core rules
 
 - Do not commit, tag, push, or publish unless the user explicitly asks in the current conversation.
-- Pricing is manually reviewed: temporary promotions and long-context tiers require explicit review of the official pricing page. Never copy prices blindly from the API.
+- Display prices are generated from the official `command-code` package reference table. Never copy prices from the live models API.
+- `src/pricing.ts` only carries manual overrides: context-dependent tiers, retired aliases, and documented corrections. Everything else comes from the generated catalog.
 - Keep the change focused: one refresh per PR, no unrelated refactors.
 - Follow [CONTRIBUTING.md](../../../CONTRIBUTING.md) for commit message rules.
 
@@ -34,29 +35,32 @@ Regenerates `src/commandcode-catalog.ts` and bumps the documented CLI version in
 
 Never add efforts to the generated file by hand. Manual effort policy for reasoning models that upstream ships without levels lives in `src/commandcode-catalog-overrides.ts` and is merged at load time. The sync drops an override itself once upstream publishes its own levels. It parses only the `MODEL_EFFORT_OVERRIDES` object literal and preserves neighboring declarations. Keep shared rationale above the declaration; review entry-specific comments after pruning because they may describe removed entries.
 
-### 3. Update display pricing (manual review)
+### 3. Display pricing
 
-Fetch <https://commandcode.ai/docs/resources/pricing-limits> and compare against `src/pricing.ts`:
+`npm run sync:commandcode-catalog` already regenerates `src/commandcode-pricing-catalog.ts` from the official reference table bundled in the `command-code` package (Model / Context / Efforts / `$in/$out · cache $x (write $y)`), so new models arrive priced and a missing price fails the sync instead of billing `$0`.
 
-- Add entries for new models and remove entries for retired models. Missing models silently display zero cost, so `MODEL_COSTS` must cover the full catalog.
-- The pricing page's "Cache Read"/"Cache Write" columns map to `cacheRead`/`cacheWrite`; a "—" column means `0`.
-- Update `PRICING_LAST_VERIFIED` to today's date.
-- Add or update `TEMPORARY_PRICING` entries for promotions with an end date, so tests fail when they expire.
+Manual work stays in `src/pricing.ts`:
+
+- `MANUAL_MODEL_COSTS` overrides the generated rates. Add an entry only for context-dependent tiers or a documented correction, and say why in a comment.
+- `TEMPORARY_PRICING` tracks promotions with an end date, so tests fail when they expire.
+- `PRICING_LAST_VERIFIED` follows `CATALOG_PRICING_SYNCED_AT`; do not edit it by hand.
+
+`npm run test:pricing` fails when a model the live API advertises has no price, when the live-list snapshot is older than 14 days (the daily sync stopped running), or when a price comes from neither the catalog nor an override.
 
 ### 4. Refresh the test fixtures
 
 ```sh
-node .agents/skills/refresh-model-catalog/scripts/refresh-model-ids.mjs
-npx tsx .agents/skills/refresh-model-catalog/scripts/sync-pricing-fixture.ts
+npm run refresh:model-ids
+npm run sync:pricing-fixture
 ```
 
-The first script snapshots the live model-id list into `tests/fixtures/commandcode-model-ids.json`; the second regenerates `tests/fixtures/commandcode-pricing.json` from `MODEL_COSTS`. The pricing test fails until `MODEL_COSTS` matches the catalog snapshot exactly.
+The first script snapshots the live model-id list into `tests/fixtures/commandcode-model-ids.json`; the second regenerates `tests/fixtures/commandcode-pricing.json` from `MODEL_COSTS`. Both run automatically in the daily sync workflow, so a manual run is only needed when refreshing locally.
 
 ### 5. Update test expectations
 
 Adjust the model-specific assertions that the refresh invalidated, typically in:
 
-- `tests/test-pricing.ts`: fixture date assertions, the `freeModels` set, and per-model rate assertions.
+- `tests/test-pricing.ts`: the `freeModels` set and per-model rate assertions. Do not pin dates: provenance is asserted against the generated catalog, and the live snapshot has a freshness window.
 - `tests/test-models.ts`: image/reasoning/effort/output-limit assertions and catalog entry counts.
 
 Do not weaken assertions to make them pass; update them to the verified upstream values.
