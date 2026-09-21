@@ -2,6 +2,50 @@
 
 ## Unreleased
 
+## 0.7.1 - 2026-09-18
+
+- Normalize nullable type arrays for `google/gemini-*` tools on the generate transport to avoid the gateway's `any_of` validation error, preserving required fields, literal data, and schemas for unrelated models (#99, #103).
+- Refresh the Command Code CLI catalog to `1.56.0`, adding image input, reasoning effort levels, a 131,072-token output limit, and reviewed display pricing for `Qwen/Qwen3.8-Omni-Flash` (#102).
+- Correct the Oh My Pi update instructions to use `omp plugin install pi-commandcode-provider --force` for npm-installed plugins (#104).
+
+### Contributors
+
+- @JaimeGonzalezVallejo — reported the Gemini nullable-schema failure, contributed the fix and regression tests, and verified it against the live endpoint (#99, #103).
+- @Newbie-troll — corrected the Oh My Pi plugin update instructions (#104).
+
+## 0.7.0 - 2026-09-15
+
+- Honor host-resolved image input on the generate transport, including explicit text-only restrictions; fall back to catalog metadata only when host input is absent or empty. Filter unsupported modality strings without unsafe casts.
+
+- Reset the generate transport's idle timeout on every received chunk, allowing active reasoning streams to exceed the timeout overall while still aborting stalled streams (#87).
+
+- Batch consecutive tool-result images after all tool results on the generate transport, preventing interleaved user messages from breaking multi-tool turns with "Tool result is missing".
+
+- Add display pricing for DeepSeek V4.1 Flash, Qwen 3.8 Max 0902, Gemini 3.8 Flash, Muse Spark 1.3 variants, LongCat 2.0 free, and Ling 3.0 Flash Sante free. Verify against the September 15 pricing page and live 69-model catalog; correct DeepSeek V4 Flash and Vision Exp off-peak prices to $0.15/$0.60 with $0.003 cache reads per million tokens.
+
+- Refresh model capabilities to `command-code@1.54.0`: add DeepSeek V4.1 Flash image input and `low`/`high`/`max` efforts, GPT-6 Astra capability metadata, Grok 4.6 image input, and MiniMax M3 efforts. Ling 3.0 Flash Sante is reasoning-capable with a 32K output limit but has no published selectable effort levels. Catalog metadata does not make models absent from the Provider API selectable.
+- Replace manual Muse Spark efforts with upstream levels: remove `minimal` for all five models and add `max` for Muse Spark 1.3.
+- Rebind a host's preselected built-in Command Code model to the extension's registered transport at session start, preserving configured endpoints and generate fallback on Oh My Pi.
+- Make the daily catalog sync self-healing: it now removes manual effort overrides once upstream publishes its own levels and includes that change in the automated pull request.
+- Fix the pi end-to-end mock against pi 0.85 and newer by matching Anthropic Messages paths independently of query parameters.
+
+### Contributors
+
+- @pierreraby — repaired catalog synchronization and Pi integration tests (#95).
+- @SamYue1 — refreshed model capability metadata (#98).
+- @myohei — added and verified model pricing (#93).
+- @Star-233 — fixed parallel tool-result image ordering and contributed pricing coverage (#84, #85).
+- @leon-zym — fixed stream idle timeout handling (#88).
+- @djymike — honored host-resolved input modalities (#94).
+- @dangvanthanh, @newCman1, and @eibednejo — contributed overlapping catalog, pricing, reasoning, and image fixes (#86, #91, #92).
+- @zidanefaqih and @Alice39s — independently validated catalog behavior and provided review evidence (#93, #98).
+
+### Validation
+
+- Full automated suite and CI, including real Pi and Oh My Pi mock-API integration tests.
+- GOAT live E2E passed: reasoning, multi-turn history, runtime commands, abort, tools, vision, and packed artifact.
+- Go live E2E remains unverified: the test account returned insufficient credits on its first request. Generate transport mock coverage passes.
+
 ## 0.6.4 - 2026-09-03
 
 - Refresh the generated Command Code capability catalog from `command-code@1.40.1` to `command-code@1.44.0`, adding current image-input, reasoning, effort, and output-limit metadata for newly published models.

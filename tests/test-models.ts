@@ -126,6 +126,40 @@ describe("commandCodeModelsFromApiResponse()", () => {
     assert.equal(modelSupportsImageInput("unknown-new-model"), false)
   })
 
+  it("advertises Qwen 3.8 Omni Flash capabilities from the CLI catalog", () => {
+    const id = "Qwen/Qwen3.8-Omni-Flash"
+    assert.deepEqual(inputModalitiesForModel(id), ["text", "image"])
+    assert.equal(MODEL_REASONING[id], true)
+    assert.deepEqual(thinkingMetadataForModel(id)?.thinking?.efforts, ["low", "medium", "xhigh"])
+    const models = commandCodeModelsFromApiResponse({
+      object: "list",
+      data: [{ ...API_RESPONSE.data[0], id }],
+    })
+    assert.equal(models[0]?.reasoning, true)
+    assert.equal(models[0]?.maxTokens, 131_072)
+  })
+
+  it("prefers host-resolved input modalities over the catalog snapshot", () => {
+    // A model published upstream after the pinned CLI release is absent from the
+    // generated catalog, so the host's resolved modalities must win.
+    assert.deepEqual(inputModalitiesForModel("unknown-new-model"), ["text"])
+    assert.deepEqual(inputModalitiesForModel("unknown-new-model", ["text", "image"]), [
+      "text",
+      "image",
+    ])
+    assert.equal(modelSupportsImageInput("unknown-new-model", ["text", "image"]), true)
+
+    const catalogVision = Object.keys(MODEL_INPUT_MODALITIES)[0]
+    // A host that narrows a catalogued vision model back to text stays authoritative.
+    assert.deepEqual(inputModalitiesForModel(catalogVision, ["text"]), ["text"])
+    assert.equal(modelSupportsImageInput(catalogVision, ["text"]), false)
+    assert.deepEqual(inputModalitiesForModel(catalogVision, ["text", "audio"]), ["text"])
+    assert.deepEqual(inputModalitiesForModel(catalogVision, ["audio"]), [])
+    assert.equal(modelSupportsImageInput(catalogVision, ["audio"]), false)
+    // An absent host list falls back to the catalog.
+    assert.deepEqual(inputModalitiesForModel(catalogVision, []), ["text", "image"])
+  })
+
   it("tracks reasoning independently from selectable effort levels", () => {
     const reasoningModels = Object.keys(MODEL_REASONING)
     const effortModels = Object.keys(MODEL_EFFORTS)
@@ -198,12 +232,14 @@ describe("commandCodeModelsFromApiResponse()", () => {
 
   it("merges manual effort overrides over the generated catalog", () => {
     const validEfforts = new Set(["minimal", "low", "medium", "high", "xhigh", "max"])
+    // An empty override map is the healthy end state once upstream publishes every
+    // level, so asserting it is non-empty made that state unreachable.
     for (const [modelId, efforts] of Object.entries(MODEL_EFFORT_OVERRIDES)) {
       assert.equal(MODEL_REASONING[modelId], true, `${modelId} override needs a reasoning flag`)
       assert.equal(
         CATALOG_MODEL_EFFORTS[modelId],
         undefined,
-        `${modelId} now has upstream efforts; drop the manual override`,
+        `${modelId} now has upstream efforts; run npm run sync:commandcode-catalog to drop it`,
       )
       assert.ok(efforts.length > 0)
       assert.ok(efforts.every((effort) => validEfforts.has(effort)))

@@ -31,12 +31,29 @@ export type CommandCodeApi = "openai-completions" | "anthropic-messages"
 
 const TEXT_INPUT_ONLY = ["text"] as const
 
-export function inputModalitiesForModel(modelId: string): readonly CommandCodeInputType[] {
+/**
+ * Input modalities for a model.
+ *
+ * The generated catalog is a snapshot of one Command Code CLI release, so a
+ * model published afterwards is absent and silently degrades to text-only.
+ * The host's resolved `model.input` is authoritative when present: it already
+ * carries `models.yml`/`models.json` overrides and is what decides whether the
+ * user can attach an image at all.
+ */
+export function inputModalitiesForModel(
+  modelId: string,
+  hostInput?: readonly string[],
+): readonly CommandCodeInputType[] {
+  if (hostInput && hostInput.length > 0) {
+    return hostInput.filter(
+      (input): input is CommandCodeInputType => input === "text" || input === "image",
+    )
+  }
   return MODEL_INPUT_MODALITIES[modelId] ?? TEXT_INPUT_ONLY
 }
 
-export function modelSupportsImageInput(modelId: string): boolean {
-  return inputModalitiesForModel(modelId).includes("image")
+export function modelSupportsImageInput(modelId: string, hostInput?: readonly string[]): boolean {
+  return inputModalitiesForModel(modelId, hostInput).includes("image")
 }
 
 export type PiThinkingLevel = "off" | "minimal" | "low" | "medium" | "high" | "xhigh" | "max"
