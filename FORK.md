@@ -56,10 +56,10 @@ repository activity.
 
 ## Two sync paths
 
-| Path | Trigger | What it does |
-| --- | --- | --- |
-| GitHub Actions | daily cron `17 6 * * *` (+ manual dispatch) | sync → prune → typecheck/tests → commit + patch bump + tag on `main` |
-| Local systemd timer | weekly, workstation | re-enables the workflow, dispatches it, then runs `pi update --extension …@main` |
+| Path                | Trigger                                     | What it does                                                                     |
+| ------------------- | ------------------------------------------- | -------------------------------------------------------------------------------- |
+| GitHub Actions      | daily cron `17 6 * * *` (+ manual dispatch) | sync → prune → typecheck/tests → commit + patch bump + tag on `main`             |
+| Local systemd timer | weekly, workstation                         | re-enables the workflow, dispatches it, then runs `pi update --extension …@main` |
 
 Log of the local path: `~/.local/state/pi-commandcode/refresh.log`.
 Remove it with `systemctl --user disable --now pi-commandcode-refresh.timer`.
