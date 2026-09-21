@@ -25,7 +25,9 @@ jobs:
       # binary against the mock API and otherwise skips silently.
       - name: Install pi
         run: |
-          npm install -g @earendil-works/pi-coding-agent@latest
+          # Pinned: pi 0.87.0 breaks tests/test-pi-local.mjs (inline image limit and
+          # a changed agent-dir layout). Unpin once upstream ships the matching fix.
+          npm install -g @earendil-works/pi-coding-agent@0.86.1
           echo "PI_BIN=$(npm prefix -g)/bin/pi" >> "$GITHUB_ENV"
       - name: Verify pi starts
         run: '"$PI_BIN" --version'

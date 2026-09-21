@@ -64,6 +64,12 @@ repository activity.
 Log of the local path: `~/.local/state/pi-commandcode/refresh.log`.
 Remove it with `systemctl --user disable --now pi-commandcode-refresh.timer`.
 
+## Known gaps
+
+- `ci.yml` pins `@earendil-works/pi-coding-agent@0.86.1`. pi 0.87.0 fails
+  `tests/test-pi-local.mjs` twice over: the host now drops an inline image it cannot
+  resize, and the agent directory layout changed. Unpin after merging the upstream fix.
+
 ## Maintenance
 
 - If the sync script itself breaks (Command Code changed its bundle layout),
