@@ -1,8 +1,8 @@
-export const CATALOG_PRICING_VERSION = "1.62.0"
-export const CATALOG_PRICING_SYNCED_AT = "2026-09-21"
+export const CATALOG_PRICING_VERSION = "1.62.1"
+export const CATALOG_PRICING_SYNCED_AT = "2026-09-22"
 
 /**
- * Generated from command-code@1.62.0 by `npm run sync:commandcode-catalog`.
+ * Generated from command-code@1.62.1 by `npm run sync:commandcode-catalog`.
  * Display prices in USD per million tokens, parsed from the official
  * `command-code` reference table (dist/bundled/command-code-knowledge/reference/models.md).
  * Do not edit manually.
