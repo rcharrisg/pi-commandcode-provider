@@ -1,8 +1,8 @@
-export const CATALOG_PRICING_VERSION = "1.62.1"
-export const CATALOG_PRICING_SYNCED_AT = "2026-09-22"
+export const CATALOG_PRICING_VERSION = "1.64.0"
+export const CATALOG_PRICING_SYNCED_AT = "2026-09-23"
 
 /**
- * Generated from command-code@1.62.1 by `npm run sync:commandcode-catalog`.
+ * Generated from command-code@1.64.0 by `npm run sync:commandcode-catalog`.
  * Display prices in USD per million tokens, parsed from the official
  * `command-code` reference table (dist/bundled/command-code-knowledge/reference/models.md).
  * Do not edit manually.
@@ -16,6 +16,7 @@ export const CATALOG_MODEL_COSTS: Readonly<
   "claude-opus-4-7": { input: 5, output: 25, cacheRead: 0.5, cacheWrite: 6.25 },
   "claude-opus-4-8": { input: 5, output: 25, cacheRead: 0.5, cacheWrite: 6.25 },
   "claude-opus-5": { input: 5, output: 25, cacheRead: 0.5, cacheWrite: 6.25 },
+  "claude-opus-5-5": { input: 4, output: 20, cacheRead: 0.2, cacheWrite: 5 },
   "claude-sonnet-4-6": { input: 3, output: 15, cacheRead: 0.3, cacheWrite: 3.75 },
   "claude-sonnet-5": { input: 2, output: 10, cacheRead: 0.2, cacheWrite: 2.5 },
   "deepseek/deepseek-v4-flash": { input: 0.15, output: 0.6, cacheRead: 0.003, cacheWrite: 0 },
@@ -42,6 +43,8 @@ export const CATALOG_MODEL_COSTS: Readonly<
   "gpt-5.6-sol": { input: 5, output: 30, cacheRead: 0.5, cacheWrite: 6.25 },
   "gpt-5.6-terra": { input: 2, output: 12, cacheRead: 0.2, cacheWrite: 2.5 },
   "gpt-6-astra": { input: 10, output: 50, cacheRead: 1, cacheWrite: 12.5 },
+  "gpt-6-luna": { input: 0.1, output: 0.5, cacheRead: 0.01, cacheWrite: 0.125 },
+  "gpt-6-sol": { input: 2, output: 10, cacheRead: 0.2, cacheWrite: 2.5 },
   "inclusionai/ling-3.0-flash-sante:free": { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
   "meituan/LongCat-2.0": { input: 0.3, output: 1.2, cacheRead: 0.006, cacheWrite: 0 },
   "meta/muse-spark-1.1": { input: 1.25, output: 4.25, cacheRead: 0.15, cacheWrite: 0 },

@@ -1,10 +1,10 @@
-export const COMMAND_CODE_CLI_VERSION = "1.62.1"
+export const COMMAND_CODE_CLI_VERSION = "1.64.0"
 
 export type CommandCodeInputType = "text" | "image"
 export type CommandCodeReasoningEffort = "minimal" | "low" | "medium" | "high" | "xhigh" | "max"
 
 /**
- * Generated from command-code@1.62.1 by `npm run sync:commandcode-catalog`.
+ * Generated from command-code@1.64.0 by `npm run sync:commandcode-catalog`.
  * Do not edit manually.
  */
 export const MODEL_INPUT_MODALITIES: Readonly<Record<string, readonly CommandCodeInputType[]>> = {
@@ -14,6 +14,7 @@ export const MODEL_INPUT_MODALITIES: Readonly<Record<string, readonly CommandCod
   "claude-opus-4-7": ["text", "image"],
   "claude-opus-4-8": ["text", "image"],
   "claude-opus-5": ["text", "image"],
+  "claude-opus-5-5": ["text", "image"],
   "claude-sonnet-4-6": ["text", "image"],
   "claude-sonnet-5": ["text", "image"],
   "deepseek/deepseek-v4-flash-vision-exp": ["text", "image"],
@@ -32,6 +33,8 @@ export const MODEL_INPUT_MODALITIES: Readonly<Record<string, readonly CommandCod
   "gpt-5.6-sol": ["text", "image"],
   "gpt-5.6-terra": ["text", "image"],
   "gpt-6-astra": ["text", "image"],
+  "gpt-6-luna": ["text", "image"],
+  "gpt-6-sol": ["text", "image"],
   "meta/muse-spark-1.1": ["text", "image"],
   "meta/muse-spark-1.2": ["text", "image"],
   "meta/muse-spark-1.2-contributor": ["text", "image"],
@@ -73,6 +76,7 @@ export const MODEL_REASONING: Readonly<Record<string, true>> = {
   "claude-opus-4-7": true,
   "claude-opus-4-8": true,
   "claude-opus-5": true,
+  "claude-opus-5-5": true,
   "claude-sonnet-4-6": true,
   "claude-sonnet-5": true,
   "deepseek/deepseek-v4-flash": true,
@@ -94,6 +98,8 @@ export const MODEL_REASONING: Readonly<Record<string, true>> = {
   "gpt-5.6-sol": true,
   "gpt-5.6-terra": true,
   "gpt-6-astra": true,
+  "gpt-6-luna": true,
+  "gpt-6-sol": true,
   "inclusionai/ling-3.0-flash-sante:free": true,
   "meituan/LongCat-2.0": true,
   "meta/muse-spark-1.1": true,
@@ -140,6 +146,7 @@ export const MODEL_EFFORTS: Readonly<Record<string, readonly CommandCodeReasonin
   "claude-opus-4-7": ["low", "medium", "high", "xhigh", "max"],
   "claude-opus-4-8": ["low", "medium", "high", "xhigh", "max"],
   "claude-opus-5": ["low", "medium", "high", "xhigh", "max"],
+  "claude-opus-5-5": ["low", "medium", "high", "xhigh", "max"],
   "claude-sonnet-4-6": ["low", "medium", "high", "xhigh", "max"],
   "claude-sonnet-5": ["low", "medium", "high", "xhigh", "max"],
   "deepseek/deepseek-v4-flash": ["high", "max"],
@@ -161,6 +168,8 @@ export const MODEL_EFFORTS: Readonly<Record<string, readonly CommandCodeReasonin
   "gpt-5.6-sol": ["low", "medium", "high", "xhigh", "max"],
   "gpt-5.6-terra": ["low", "medium", "high", "xhigh", "max"],
   "gpt-6-astra": ["low", "medium", "high", "xhigh", "max"],
+  "gpt-6-luna": ["low", "medium", "high", "xhigh", "max"],
+  "gpt-6-sol": ["low", "medium", "high", "xhigh", "max"],
   "meta/muse-spark-1.1": ["low", "medium", "high", "xhigh"],
   "meta/muse-spark-1.2": ["low", "medium", "high", "xhigh"],
   "meta/muse-spark-1.2-contributor": ["low", "medium", "high", "xhigh"],
