@@ -5,6 +5,29 @@ that keeps the catalog current without manual releases.
 
 Tracks `upstream/main` (merged up to v0.7.1 on 2026-09-21) plus the automation below.
 
+## Paused (2026-10-04)
+
+The project is paused because it is not in use, so the automation is off:
+
+- GitHub: the `Command Code catalog sync` workflow is `disabled_manually` (no daily
+  cron run, no automatic version bumps). `CI` and `Memory benchmark` stay enabled and
+  only run on push/PR, so they stay quiet while nothing is pushed.
+- Workstation: `systemctl --user disable --now pi-commandcode-refresh.timer` (the weekly
+  local fallback no longer dispatches the workflow or runs `pi update`).
+
+Last state before the pause: `main` at `v0.7.6`, catalog synced to
+`command-code@1.74.1` (85 priced models), CI green on pi 1.0.1.
+
+Resume with:
+
+```bash
+gh workflow enable "Command Code catalog sync" -R rcharrisg/pi-commandcode-provider
+systemctl --user enable --now pi-commandcode-refresh.timer
+```
+
+After a long pause, check the fork cron trap below before trusting the schedule, and run
+`gh workflow run model-metadata.yml -R rcharrisg/pi-commandcode-provider` once by hand.
+
 ## What this fork changes
 
 - `scripts/prune-catalog-overrides.ts` — drops `MODEL_EFFORT_OVERRIDES` entries as
