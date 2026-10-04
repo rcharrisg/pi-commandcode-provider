@@ -56,10 +56,10 @@ repository activity.
 
 ## Two sync paths
 
-| Path                | Trigger                                     | What it does                                                                                                |
-| ------------------- | ------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| GitHub Actions      | daily cron `17 6 * * *` (+ manual dispatch) | refresh live snapshot → sync capabilities and prices → prune → fixtures → tests → commit + patch bump + tag |
-| Local systemd timer | weekly, workstation                         | re-enables the workflow, dispatches it, then runs `pi update --extension …@main`                            |
+| Path                | Trigger                                     | What it does                                                                                                                  |
+| ------------------- | ------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| GitHub Actions      | daily cron `17 6 * * *` (+ manual dispatch) | refresh live snapshot → sync capabilities and prices → prune → fixtures → tests → commit + patch bump + tag                   |
+| Local systemd timer | weekly, workstation                         | re-enables the workflow, dispatches it, then runs `pi update --extension …@main` (no-op while the extension is not installed) |
 
 Log of the local path: `~/.local/state/pi-commandcode/refresh.log`.
 Remove it with `systemctl --user disable --now pi-commandcode-refresh.timer`.
@@ -100,4 +100,7 @@ the signature of a dead sync workflow.
 
 ## Install tracking
 
-Installed in pi as `git:github.com/rcharrisg/pi-commandcode-provider@main`; each sync run the workflow advances `main`.
+Not installed in pi as of 2026-10-03 (removed on purpose). Each sync run still advances
+`main`, so `pi install git:github.com/rcharrisg/pi-commandcode-provider@main` picks up the
+current catalog whenever it is wanted again. The weekly local timer keeps dispatching the
+workflow, but its `pi update --extension …@main` step is a no-op while nothing is installed.
