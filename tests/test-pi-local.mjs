@@ -991,7 +991,7 @@ try {
     images: [
       {
         type: "image",
-        data: "iVBORw0KGgo=",
+        data: "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGP4z8AAAAMBAQDJ/pLvAAAAAElFTkSuQmCC",
         mimeType: "image/png",
       },
     ],

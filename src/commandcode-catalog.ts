@@ -1,10 +1,17 @@
-export const COMMAND_CODE_CLI_VERSION = "1.64.0"
+export const COMMAND_CODE_CLI_VERSION = "1.74.1"
 
 export type CommandCodeInputType = "text" | "image"
-export type CommandCodeReasoningEffort = "minimal" | "low" | "medium" | "high" | "xhigh" | "max"
+export type CommandCodeReasoningEffort =
+  | "off"
+  | "minimal"
+  | "low"
+  | "medium"
+  | "high"
+  | "xhigh"
+  | "max"
 
 /**
- * Generated from command-code@1.64.0 by `npm run sync:commandcode-catalog`.
+ * Generated from command-code@1.74.1 by `npm run sync:commandcode-catalog`.
  * Do not edit manually.
  */
 export const MODEL_INPUT_MODALITIES: Readonly<Record<string, readonly CommandCodeInputType[]>> = {
@@ -17,8 +24,10 @@ export const MODEL_INPUT_MODALITIES: Readonly<Record<string, readonly CommandCod
   "claude-opus-5-5": ["text", "image"],
   "claude-sonnet-4-6": ["text", "image"],
   "claude-sonnet-5": ["text", "image"],
+  "claude-sonnet-5-5": ["text", "image"],
   "deepseek/deepseek-v4-flash-vision-exp": ["text", "image"],
   "deepseek/deepseek-v4.1-flash": ["text", "image"],
+  "deepseek/deepseek-v4.1-flash-fast": ["text", "image"],
   "google/gemini-3.1-flash-lite": ["text", "image"],
   "google/gemini-3.5-flash": ["text", "image"],
   "google/gemini-3.5-flash-lite": ["text", "image"],
@@ -35,6 +44,7 @@ export const MODEL_INPUT_MODALITIES: Readonly<Record<string, readonly CommandCod
   "gpt-6-astra": ["text", "image"],
   "gpt-6-luna": ["text", "image"],
   "gpt-6-sol": ["text", "image"],
+  "gpt-6.1-sol": ["text", "image"],
   "meta/muse-spark-1.1": ["text", "image"],
   "meta/muse-spark-1.2": ["text", "image"],
   "meta/muse-spark-1.2-contributor": ["text", "image"],
@@ -55,6 +65,7 @@ export const MODEL_INPUT_MODALITIES: Readonly<Record<string, readonly CommandCod
   "Qwen/Qwen3.8-Max-0902": ["text", "image"],
   "Qwen/Qwen3.8-Omni-Flash": ["text", "image"],
   "sakana/fugu-ultra": ["text", "image"],
+  "stealth/space-bunny-alpha": ["text", "image"],
   "stepfun/Step-3.7-Flash": ["text", "image"],
   "stepfun/Step-5-Preview": ["text", "image"],
   "thinkingmachines/inkling": ["text", "image"],
@@ -79,11 +90,13 @@ export const MODEL_REASONING: Readonly<Record<string, true>> = {
   "claude-opus-5-5": true,
   "claude-sonnet-4-6": true,
   "claude-sonnet-5": true,
+  "claude-sonnet-5-5": true,
   "deepseek/deepseek-v4-flash": true,
   "deepseek/deepseek-v4-flash-fast": true,
   "deepseek/deepseek-v4-flash-vision-exp": true,
   "deepseek/deepseek-v4-pro": true,
   "deepseek/deepseek-v4.1-flash": true,
+  "deepseek/deepseek-v4.1-flash-fast": true,
   "google/gemini-3.1-flash-lite": true,
   "google/gemini-3.5-flash": true,
   "google/gemini-3.5-flash-lite": true,
@@ -100,7 +113,9 @@ export const MODEL_REASONING: Readonly<Record<string, true>> = {
   "gpt-6-astra": true,
   "gpt-6-luna": true,
   "gpt-6-sol": true,
+  "gpt-6.1-sol": true,
   "inclusionai/ling-3.0-flash-sante:free": true,
+  "inclusionai/ling-3.1-flash:free": true,
   "meituan/LongCat-2.0": true,
   "meta/muse-spark-1.1": true,
   "meta/muse-spark-1.2": true,
@@ -124,6 +139,7 @@ export const MODEL_REASONING: Readonly<Record<string, true>> = {
   "Qwen/Qwen3.8-Max-0902": true,
   "Qwen/Qwen3.8-Omni-Flash": true,
   "sakana/fugu-ultra": true,
+  "stealth/space-bunny-alpha": true,
   "stepfun/Step-3.5-Flash": true,
   "stepfun/Step-3.7-Flash": true,
   "stepfun/Step-5-Preview": true,
@@ -149,11 +165,13 @@ export const MODEL_EFFORTS: Readonly<Record<string, readonly CommandCodeReasonin
   "claude-opus-5-5": ["low", "medium", "high", "xhigh", "max"],
   "claude-sonnet-4-6": ["low", "medium", "high", "xhigh", "max"],
   "claude-sonnet-5": ["low", "medium", "high", "xhigh", "max"],
-  "deepseek/deepseek-v4-flash": ["high", "max"],
+  "claude-sonnet-5-5": ["low", "medium", "high", "xhigh", "max"],
+  "deepseek/deepseek-v4-flash": ["off", "high", "max"],
   "deepseek/deepseek-v4-flash-fast": ["low", "high", "max"],
-  "deepseek/deepseek-v4-flash-vision-exp": ["high", "max"],
-  "deepseek/deepseek-v4-pro": ["high", "max"],
-  "deepseek/deepseek-v4.1-flash": ["low", "high", "max"],
+  "deepseek/deepseek-v4-flash-vision-exp": ["off", "high", "max"],
+  "deepseek/deepseek-v4-pro": ["off", "high", "max"],
+  "deepseek/deepseek-v4.1-flash": ["off", "low", "high", "max"],
+  "deepseek/deepseek-v4.1-flash-fast": ["off", "low", "high", "max"],
   "google/gemini-3.1-flash-lite": ["low", "medium", "high"],
   "google/gemini-3.5-flash": ["low", "medium", "high"],
   "google/gemini-3.5-flash-lite": ["low", "medium", "high"],
@@ -170,6 +188,8 @@ export const MODEL_EFFORTS: Readonly<Record<string, readonly CommandCodeReasonin
   "gpt-6-astra": ["low", "medium", "high", "xhigh", "max"],
   "gpt-6-luna": ["low", "medium", "high", "xhigh", "max"],
   "gpt-6-sol": ["low", "medium", "high", "xhigh", "max"],
+  "gpt-6.1-sol": ["low", "medium", "high", "xhigh", "max"],
+  "inclusionai/ling-3.1-flash:free": ["low", "medium", "high"],
   "meta/muse-spark-1.1": ["low", "medium", "high", "xhigh"],
   "meta/muse-spark-1.2": ["low", "medium", "high", "xhigh"],
   "meta/muse-spark-1.2-contributor": ["low", "medium", "high", "xhigh"],
@@ -183,6 +203,7 @@ export const MODEL_EFFORTS: Readonly<Record<string, readonly CommandCodeReasonin
   "Qwen/Qwen3.8-Max-0902": ["low", "medium", "xhigh"],
   "Qwen/Qwen3.8-Omni-Flash": ["low", "medium", "xhigh"],
   "sakana/fugu-ultra": ["high", "xhigh"],
+  "stealth/space-bunny-alpha": ["low", "medium", "high", "max"],
   "stepfun/Step-5-Preview": ["low", "medium", "high"],
   "tencent/hy4-preview": ["low", "medium", "high"],
   "xai/grok-4.5": ["low", "medium", "high"],
@@ -196,9 +217,11 @@ export const MODEL_EFFORTS: Readonly<Record<string, readonly CommandCodeReasonin
 
 export const MODEL_MAX_OUTPUT_TOKENS: Readonly<Record<string, number>> = {
   "inclusionai/ling-3.0-flash-sante:free": 32_768,
+  "inclusionai/ling-3.1-flash:free": 32_768,
   "poolside/laguna-s-2.1-free": 32_768,
   "Qwen/Qwen3.8-27B": 32_768,
   "Qwen/Qwen3.8-Omni-Flash": 131_072,
+  "stealth/space-bunny-alpha": 524_288,
   "z-ai/glm-5.3-flash": 131_072,
   "z-ai/glm-5.3-flashx": 131_072,
 }

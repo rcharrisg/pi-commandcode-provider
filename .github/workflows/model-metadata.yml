@@ -34,7 +34,9 @@ jobs:
           registry-url: https://registry.npmjs.org
       - run: npm ci
       - name: Compare with the latest Command Code CLI
-        run: npm run check:commandcode-catalog | tee commandcode-catalog-report.md
+        run: |
+          set -o pipefail
+          npm run check:commandcode-catalog | tee commandcode-catalog-report.md
       - name: Publish catalog report
         if: always()
         run: cat commandcode-catalog-report.md >> "$GITHUB_STEP_SUMMARY"
@@ -58,7 +60,9 @@ jobs:
       - name: Refresh the live model list snapshot
         run: npm run refresh:model-ids
       - name: Synchronize with the latest Command Code CLI
-        run: npm run sync:commandcode-catalog | tee commandcode-catalog-report.md
+        run: |
+          set -o pipefail
+          npm run sync:commandcode-catalog | tee commandcode-catalog-report.md
       - name: Prune overrides now shipped by the catalog
         run: npm run prune:catalog-overrides
       - name: Refresh the pricing fixture

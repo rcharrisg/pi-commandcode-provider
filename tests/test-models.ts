@@ -28,6 +28,8 @@ import {
   type CommandCodeModel,
 } from "../src/models.ts"
 
+const VALID_EFFORTS = new Set(["off", "minimal", "low", "medium", "high", "xhigh", "max"])
+
 const API_RESPONSE = {
   object: "list",
   data: [
@@ -221,7 +223,7 @@ describe("commandCodeModelsFromApiResponse()", () => {
   })
 
   it(`uses the command-code@${COMMAND_CODE_CLI_VERSION} reasoning effort catalog`, () => {
-    const validEfforts = new Set(["minimal", "low", "medium", "high", "xhigh", "max"])
+    const validEfforts = VALID_EFFORTS
     assert.ok(Object.keys(MODEL_EFFORTS).length > 0)
     for (const efforts of Object.values(MODEL_EFFORTS)) {
       assert.ok(efforts.length > 0)
@@ -231,7 +233,7 @@ describe("commandCodeModelsFromApiResponse()", () => {
   })
 
   it("merges manual effort overrides over the generated catalog", () => {
-    const validEfforts = new Set(["minimal", "low", "medium", "high", "xhigh", "max"])
+    const validEfforts = VALID_EFFORTS
     // An empty override map is the healthy end state once upstream publishes every
     // level, so asserting it is non-empty made that state unreachable.
     for (const [modelId, efforts] of Object.entries(MODEL_EFFORT_OVERRIDES)) {

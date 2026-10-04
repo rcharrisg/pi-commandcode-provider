@@ -165,7 +165,7 @@ describe("Command Code model metadata checker", () => {
       `export const COMMAND_CODE_CLI_VERSION = "1.33.0"
 
 export type CommandCodeInputType = "text" | "image"
-export type CommandCodeReasoningEffort = "minimal" | "low" | "medium" | "high" | "xhigh" | "max"
+export type CommandCodeReasoningEffort = "off" | "minimal" | "low" | "medium" | "high" | "xhigh" | "max"
 
 /**
  * Generated from command-code@1.33.0 by \`npm run sync:commandcode-catalog\`.
@@ -198,6 +198,13 @@ export const MODEL_MAX_OUTPUT_TOKENS: Readonly<Record<string, number>> = {
       ),
       "The capability snapshot currently follows `command-code@1.33.0`.",
     )
+  })
+
+  it("accepts the documented off effort", () => {
+    const reference = MODELS_REFERENCE.replace("low, high", "off, low, high")
+    assert.deepEqual(parseModelsReference(reference).reasoningEfforts, {
+      "vision-model": ["off", "low", "high"],
+    })
   })
 
   it("rejects unexpected upstream structures instead of silently passing", () => {

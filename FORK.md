@@ -79,9 +79,18 @@ the signature of a dead sync workflow.
 
 ## Known gaps
 
-- `ci.yml` pins `@earendil-works/pi-coding-agent@0.86.1`. pi 0.87.0 fails
-  `tests/test-pi-local.mjs` twice over: the host now drops an inline image it cannot
-  resize, and the agent directory layout changed. Unpin after merging the upstream fix.
+- Fixed 2026-10-03: the daily sync died silently whenever a `command-code` release
+  published `off` as a selectable reasoning effort (`deepseek/deepseek-v4-pro` was the
+  first, in `command-code@1.74.x`). `parseModelsReference` rejected `off`, and the
+  workflow's `npm run sync:commandcode-catalog | tee …` swallowed the non-zero exit, so
+  the job only failed later in `test:pricing` with five unpriceable models. `off` is now
+  a valid effort and both `| tee` steps run with `set -o pipefail`.
+- Upstream `patlux/pi-commandcode-provider` still has the same silent failure as of
+  2026-10-03: its `Command Code catalog sync` run reports success while printing
+  `Unexpected reasoning efforts for deepseek/deepseek-v4-pro` and opening no PR.
+- `ci.yml` pins `@earendil-works/pi-coding-agent@1.0.1` instead of `@latest` so a
+  breaking pi release cannot turn every push red. Bump it after running
+  `PI_LOCAL_REQUIRED=1 npm test` locally against the new pi.
 
 ## Maintenance
 

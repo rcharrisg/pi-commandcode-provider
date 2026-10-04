@@ -37,6 +37,8 @@ const freeModels = new Set([
   "poolside/laguna-s-2.1-free",
   "meituan/LongCat-2.0:free",
   "inclusionai/ling-3.0-flash-sante:free",
+  "inclusionai/ling-3.1-flash:free",
+  "stealth/space-bunny-alpha",
 ])
 
 function assertCost(
